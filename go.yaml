@@ -1,0 +1,62 @@
+version: "3"
+services:
+  app:
+    #image: golang-webservice-example
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    links:
+      - mysqlcontainer
+    networks:
+      - app-network
+
+  mysqlcontainer:
+    #image: mysql:latest
+    image: mysql:8.0.29-debian
+    container_name: mysqlcontainer
+    volumes:
+      #- ./docker/mysql/data:/var/lib/mysql:rw
+#      - db-volume:var/lib/mysql
+      - ./db/golang.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    environment:
+      MYSQL_DATABASE: test
+      MYSQL_USER: andrey
+      MYSQL_PASSWORD: root123
+      MYSQL_ROOT_PASSWORD: root123
+    networks:
+      - app-network
+
+
+
+  nginx:
+    # используем последний стабильный образ nginx
+    image: nginx:1.21.6-alpine
+    # маршрутизируем порты
+    ports:
+      - "80:80"
+      - "443:443"
+    expose:
+      - 80
+    # монтируем директории, слева директории на основной машине, справа - куда они монтируются в контейнере
+#    volumes:
+#      - ./hosts:/etc/nginx/conf.d
+#      - ./www:/var/www
+#      - ./logs/nginx:/var/log/nginx
+    # nginx должен общаться с app контейнером
+    links:
+      - app
+    networks:
+      - app-network
+
+#volumes:
+#  - db-volume:
+#  - ./config/database.go
+
+
+networks:
+  app-network:
+
+# http://172.19.0.3:9090/ - app
+# http://172.19.0.4/ - nginx
